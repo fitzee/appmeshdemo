@@ -7,7 +7,7 @@ from appmeshdemo.container_stack import ContainerStack
 from appmeshdemo.appmesh_stack import AppMeshStack
 from appmeshdemo.colorapp_ecr_stack import ColorappECRStack
 
-apps = ['colorteller']
+apps = ['colorteller', 'gateway']
 app = cdk.App()
 
 ns = NetworkStack(app, 'appmeshdemo-network')
