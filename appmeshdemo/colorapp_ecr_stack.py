@@ -1,6 +1,5 @@
 from aws_cdk import (aws_ecr as ecr, aws_iam as iam, aws_codebuild as codebuild, cdk)
 from utils import PolicyUtils as pu
-import docker
 
 
 class ColorappECRStack(cdk.Stack):
@@ -9,14 +8,10 @@ class ColorappECRStack(cdk.Stack):
 
         env = pu.PolicyUtils.current_env(self)
         uri = env['account']+'.dkr.ecr.'+env['region']+'.amazonaws.com/'
-        docker_client = docker.from_env()
 
         # create the repositories
         for appl in apps:
             ecr.Repository(scope=self, id=id+appl, repository_name=appl)
-            #print('./appmeshdemo/colorapp/'+appl)
-            #img = docker_client.images.build(path='./appmeshdemo/colorapp/'+appl, tag=uri+appl.lower())
-            #docker_client.images.push(repository=uri+appl.lower())
 
             be = codebuild.BuildEnvironment()
             be['privileged'] = True
@@ -26,11 +21,6 @@ class ColorappECRStack(cdk.Stack):
                                           'AWS_ACCOUNT_ID': codebuild.BuildEnvironmentVariable(value=env['account']),
                                           'IMAGE_REPO_NAME': codebuild.BuildEnvironmentVariable(value=appl),
                                           'IMAGE_TAG': codebuild.BuildEnvironmentVariable(value='latest')}
-            #
-            # benv = {'AWS_DEFAULT_REGION': codebuild.BuildEnvironmentVariable(env['region']),
-            #         'AWS_ACCOUNT_ID': codebuild.BuildEnvironmentVariable(env['account']),
-            #         'IMAGE_TAG':  codebuild.BuildEnvironmentVariable('latest')}
-
             buildspec = {
                 'version': '0.2',
                 'phases': {
@@ -43,7 +33,7 @@ class ColorappECRStack(cdk.Stack):
                     },
                     'build': {
                         'commands': ['echo build Docker image on `date`',
-                                     'cd src',
+                                     'cd appmeshdemo/colorapp/'+appl,
                                      'docker build -t sample-express-app:latest .',
                                      'docker tag sample-express-app:latest <your-ecr-url>/sample-express-app:latest']
                     },
@@ -59,4 +49,6 @@ class ColorappECRStack(cdk.Stack):
             cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
                               inline_policies={'codedeployecr': pd})
 
-            cb = codebuild.Project(self, id, environment=be, role=cbrole, build_spec=buildspec)
+            cb = codebuild.Project(self, id, environment=be, role=cbrole, build_spec=buildspec,
+                                   source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
+
