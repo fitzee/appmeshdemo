@@ -7,7 +7,7 @@ class ColorappECRStack(cdk.Stack):
         super().__init__(app, id)
 
         env = pu.PolicyUtils.current_env(self)
-        uri = env['account']+'.dkr.ecr.'+env['region']+'.amazonaws.com/'
+        uri = env['account']+'.dkr.ecr.'+env['region']+'.amazonaws.com'
 
         # create the repositories
         for appl in apps:
@@ -29,18 +29,18 @@ class ColorappECRStack(cdk.Stack):
                     },
                     'pre_build': {
                         'commands': ['echo logging in to AWS ECR...',
-                                     '$(aws ecr get-login --no-include-email --region us-east-1)']
+                                     '$(aws ecr get-login --no-include-email --region %s)' % env['region']]
                     },
                     'build': {
-                        'commands': ['echo build Docker image on `date`',
-                                     'cd appmeshdemo/colorapp/'+appl,
-                                     'docker build -t sample-express-app:latest .',
-                                     'docker tag sample-express-app:latest <your-ecr-url>/sample-express-app:latest']
+                        'commands': ['echo building Docker image...',
+                                     'cd appmeshdemo/colorapp/%s' % appl,
+                                     'docker build -t %s:latest .' % appl,
+                                     'docker tag %s:latest %s/%s:latest' % (appl, uri, appl)]
                     },
                     'post_build': {
-                        'commands': ['echo build Docker image complete `date`',
+                        'commands': ['echo Docker image build complete!',
                                      'echo push latest Docker images to ECR...',
-                                     'docker push <your-ecr-url>/sample-express-app:latest']
+                                     'docker push %s/%s:latest' % (uri, appl)]
                     }
                 }
             }
@@ -49,6 +49,6 @@ class ColorappECRStack(cdk.Stack):
             cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
                               inline_policies={'codedeployecr': pd})
 
-            cb = codebuild.Project(self, id, environment=be, role=cbrole, build_spec=buildspec,
+            codebuild.Project(self, id, environment=be, role=cbrole, build_spec=buildspec,
                                    source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
 
