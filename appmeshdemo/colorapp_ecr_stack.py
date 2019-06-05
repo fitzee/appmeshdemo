@@ -9,6 +9,10 @@ class ColorappECRStack(cdk.Stack):
         env = pu.PolicyUtils.current_env(self)
         uri = env['account']+'.dkr.ecr.'+env['region']+'.amazonaws.com'
 
+        pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/codedeployecr.json')
+        cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
+                          inline_policies={'codedeployecr': pd})
+
         # create the repositories
         for appl in apps:
             ecr.Repository(scope=self, id=id+appl, repository_name=appl)
@@ -45,10 +49,6 @@ class ColorappECRStack(cdk.Stack):
                 }
             }
 
-            pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/codedeployecr.json')
-            cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
-                              inline_policies={'codedeployecr': pd})
-
-            codebuild.Project(self, id, environment=be, role=cbrole, build_spec=buildspec,
+            codebuild.Project(self, appl, environment=be, role=cbrole, build_spec=buildspec,
                                    source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
 
