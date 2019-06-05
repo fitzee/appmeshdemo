@@ -1,0 +1,11 @@
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "appmesh:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

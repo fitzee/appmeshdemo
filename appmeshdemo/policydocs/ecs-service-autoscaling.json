@@ -1,0 +1,15 @@
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "application-autoscaling:*",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:PutMetricAlarm",
+        "ecs:DescribeServices",
+        "ecs:UpdateService"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

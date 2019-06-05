@@ -1,1 +1,11 @@
--e .
+aws-cdk.aws_ec2
+aws-cdk.aws_ecs
+aws-cdk.aws_iam
+aws-cdk.aws_codebuild
+aws-cdk.aws_logs
+aws-cdk.aws_servicediscovery
+aws-cdk.aws_elasticloadbalancing
+aws-cdk.aws_appmesh
+aws-cdk.cdk
+ipaddress
+
