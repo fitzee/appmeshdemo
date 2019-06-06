@@ -15,10 +15,6 @@ class ColorappECRStack(cdk.Stack):
         cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
                           inline_policies={'codedeployecr': pd})
 
-        pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/codepipelinebuild.json')
-        cprole = iam.Role(self, 'CodePipelineBuildRole', assumed_by=iam.ServicePrincipal('codepipeline'),
-                          inline_policies={'codepipelinebuild': pd})
-
         # create the repositories
         cnt = 1
         for appl in apps:
