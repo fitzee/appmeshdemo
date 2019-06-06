@@ -1,8 +1,5 @@
-from aws_cdk import (aws_ecr as ecr, aws_iam as iam, aws_codebuild as codebuild, aws_codepipeline as pipeline,
-                     aws_codepipeline_actions as pactions, aws_s3 as s3, aws_cloudformation as cfn, cdk)
+from aws_cdk import (aws_ecr as ecr, aws_iam as iam, aws_codebuild as codebuild, aws_cloudformation as cfn, cdk)
 from utils import PolicyUtils as pu
-import requests
-import json
 
 
 class ColorappECRStack(cdk.Stack):
@@ -23,6 +20,7 @@ class ColorappECRStack(cdk.Stack):
                           inline_policies={'codepipelinebuild': pd})
 
         # create the repositories
+        cnt = 1
         for appl in apps:
             ecr.Repository(scope=self, id=id+appl, repository_name=appl)
 
@@ -58,17 +56,15 @@ class ColorappECRStack(cdk.Stack):
                 }
             }
 
+            # Create the build project in CodeBuild
             proj = codebuild.Project(self, appl, environment=be, role=cbrole, build_spec=buildspec,
                                      source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
 
-            self._projects.append(proj)
-
-        cnt = 1
-        for project in self._projects:
+            # Create a custom CloudFormation resource to start the build
             call = cfn.AwsSdkCall()
             call['service'] = 'CodeBuild'
             call['action'] = 'startBuild'
-            call['parameters'] = {'projectName': project.project_name}
-            call['physicalResourceId'] = 'Custom%s' % project.project_name
-            cfn.AwsCustomResource(self, 'CustomCodebuild%s' % cnt, on_create=call)
+            call['parameters'] = {'projectName': proj.project_name}
+            call['physicalResourceId'] = 'Custom%s' % proj.project_name
+            cfn.AwsCustomResource(self, 'CustomCodebuild%s' % cnt, on_create=call, on_update=call)
             cnt = cnt + 1
