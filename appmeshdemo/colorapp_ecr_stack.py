@@ -3,8 +3,6 @@ from utils import PolicyUtils as pu
 
 
 class ColorappECRStack(cdk.Stack):
-    _projects = []
-
     def __init__(self, app: cdk.App, id: str, apps: list, **kwargs) -> None:
         super().__init__(app, id)
 
