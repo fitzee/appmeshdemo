@@ -1,11 +1,16 @@
+aws-cdk-aws_s3
 aws-cdk.aws_ec2
 aws-cdk.aws_ecs
+aws-cdk.aws_ecr
 aws-cdk.aws_iam
 aws-cdk.aws_codebuild
+aws-cdk.aws_codepipeline
 aws-cdk.aws_logs
 aws-cdk.aws_servicediscovery
 aws-cdk.aws_elasticloadbalancing
 aws-cdk.aws_appmesh
 aws-cdk.cdk
 ipaddress
+requests
+json
 

@@ -1,8 +1,13 @@
-from aws_cdk import (aws_ecr as ecr, aws_iam as iam, aws_codebuild as codebuild, cdk)
+from aws_cdk import (aws_ecr as ecr, aws_iam as iam, aws_codebuild as codebuild, aws_codepipeline as pipeline,
+                     aws_codepipeline_actions as pactions, aws_s3 as s3, aws_cloudformation as cfn, cdk)
 from utils import PolicyUtils as pu
+import requests
+import json
 
 
 class ColorappECRStack(cdk.Stack):
+    _projects = []
+
     def __init__(self, app: cdk.App, id: str, apps: list, **kwargs) -> None:
         super().__init__(app, id)
 
@@ -12,6 +17,10 @@ class ColorappECRStack(cdk.Stack):
         pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/codedeployecr.json')
         cbrole = iam.Role(self, 'CodeBuildECRRole', assumed_by=iam.ServicePrincipal('codebuild'),
                           inline_policies={'codedeployecr': pd})
+
+        pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/codepipelinebuild.json')
+        cprole = iam.Role(self, 'CodePipelineBuildRole', assumed_by=iam.ServicePrincipal('codepipeline'),
+                          inline_policies={'codepipelinebuild': pd})
 
         # create the repositories
         for appl in apps:
@@ -49,6 +58,17 @@ class ColorappECRStack(cdk.Stack):
                 }
             }
 
-            codebuild.Project(self, appl, environment=be, role=cbrole, build_spec=buildspec,
-                                   source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
+            proj = codebuild.Project(self, appl, environment=be, role=cbrole, build_spec=buildspec,
+                                     source=codebuild.GitHubSource(repo='appmeshdemo', owner='fitzee'))
 
+            self._projects.append(proj)
+
+        cnt = 1
+        for project in self._projects:
+            call = cfn.AwsSdkCall()
+            call['service'] = 'CodeBuild'
+            call['action'] = 'startBuild'
+            call['parameters'] = {'projectName': project.project_name}
+            call['physicalResourceId'] = 'Custom%s' % project.project_name
+            cfn.AwsCustomResource(self, 'CustomCodebuild%s' % cnt, on_create=call)
+            cnt = cnt + 1

@@ -48,7 +48,6 @@ class ContainerStack(cdk.Stack):
                               iam_instance_profile=bip.instance_profile_name,
                               image_id=ec2.AmazonLinuxImage().get_image(self).image_id,
                               subnet_id=vpc.private_subnets[0].subnet_id)
-        # security_groups=[bsg.security_group_name],
 
         # Load-Balancer stuff ------------------------------------------------------------------------------------
         plbsg = ec2.SecurityGroup(self, 'PublicLoadBalancerSG', vpc=vpc)
