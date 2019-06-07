@@ -7,7 +7,9 @@
         "ecr:GetAuthorizationToken",
         "ecr:InitiateLayerUpload",
         "ecr:PutImage",
-        "ecr:UploadLayerPart"
+        "ecr:UploadLayerPart",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream"
       ],
       "Resource": "*",
       "Effect": "Allow"

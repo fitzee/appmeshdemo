@@ -6,4 +6,9 @@ class AppMeshStack(cdk.Stack):
         super().__init__(app, id)
 
         # create the AppMesh
-        appmesh.CfnMesh(self, id, mesh_name=meshname)
+        mesh = appmesh.CfnMesh(self, id, mesh_name=meshname)
+        self._mesh = mesh
+
+    @property
+    def mesh(self):
+        return self._mesh

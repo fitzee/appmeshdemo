@@ -3,6 +3,8 @@ from utils import PolicyUtils as pu
 
 
 class ColorappECRStack(cdk.Stack):
+    _repos = {}
+
     def __init__(self, app: cdk.App, id: str, apps: list, **kwargs) -> None:
         super().__init__(app, id)
 
@@ -16,7 +18,8 @@ class ColorappECRStack(cdk.Stack):
         # create the repositories
         cnt = 1
         for appl in apps:
-            ecr.Repository(scope=self, id=id+appl, repository_name=appl)
+            repo = ecr.Repository(scope=self, id=id+appl, repository_name=appl)
+            self._repos[appl] = repo
 
             be = codebuild.BuildEnvironment()
             be['privileged'] = True
@@ -62,3 +65,8 @@ class ColorappECRStack(cdk.Stack):
             call['physicalResourceId'] = 'Custom%s' % proj.project_name
             cfn.AwsCustomResource(self, 'CustomCodebuild%s' % cnt, on_create=call, on_update=call)
             cnt = cnt + 1
+
+    @property
+    def repos(self):
+        return self._repos
+

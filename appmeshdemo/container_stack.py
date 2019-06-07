@@ -20,15 +20,6 @@ class ContainerStack(cdk.Stack):
         iam.Role(self, 'ECSServiceAutoScalingRole', assumed_by=iam.ServicePrincipal('application-autoscaling'),
                  inline_policies={'ecs-service-autoscaling': pd})
 
-        # TaskIamRole and TaskExecutionIamRole
-        iam.Role(self, 'TaskIamRole', assumed_by=iam.ServicePrincipal('ecs-tasks'),
-                 managed_policy_arns=['arn:aws:iam::aws:policy/CloudWatchFullAccess',
-                                      'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'])
-
-        iam.Role(self, 'TaskExecutionIamRole', assumed_by=iam.ServicePrincipal('ecs-tasks'),
-                 managed_policy_arns=['arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly',
-                                      'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'])
-
         logs.LogGroup(self, 'ECSServiceLogGroup', retention_days=logs.RetentionDays.OneMonth)
         sd.PrivateDnsNamespace(self, 'ECSServiceDiscoveryNamespace', vpc=vpc, name=servicedomain)
 
@@ -69,3 +60,4 @@ class ContainerStack(cdk.Stack):
         plbl = elbv2.ApplicationListener(self, 'PublicLoadBalancerListener', load_balancer=plb, port=80,
                                          protocol=elbv2.ApplicationProtocol.Http,
                                          default_target_groups=[dtg])
+
