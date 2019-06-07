@@ -1,4 +1,3 @@
-aws-cdk-aws_s3
 aws-cdk.aws_ec2
 aws-cdk.aws_ecs
 aws-cdk.aws_ecr
@@ -12,5 +11,4 @@ aws-cdk.aws_appmesh
 aws-cdk.cdk
 ipaddress
 requests
-json
 

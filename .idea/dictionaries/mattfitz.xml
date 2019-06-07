@@ -4,6 +4,7 @@
       <w>balancer</w>
       <w>createpolicyfromfile</w>
       <w>ecsinstancerole</w>
+      <w>grafana</w>
       <w>policydict</w>
       <w>policydocument</w>
       <w>policyfile</w>
