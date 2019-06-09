@@ -16,5 +16,6 @@ cs = ContainerStack(app, 'appmeshdemo-container', vpc=ns.vpc, servicedomain=sd)
 cs.add_dependency(ns)
 mesh = AppMeshStack(app, 'appmeshdemo-appmesh', 'default')
 ecrs = ColorappECRStack(app, 'appmeshdemo-colorapp-ecr', apps=apps)
-setup = ColorappCfgStack(app, 'appmeshdemo-colorapp-cfg', servicedomain=sd, mesh=mesh.mesh, repos=ecrs.repos, apps=apps)
+setup = ColorappCfgStack(app, 'appmeshdemo-colorapp-cfg', cluster=cs.cluster, vpc=ns.vpc, mesh=mesh.mesh,
+                         repos=ecrs.repos, clustersg=cs.clustersg, apps=apps)
 app.run()

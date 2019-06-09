@@ -8,6 +8,8 @@ class ContainerStack(cdk.Stack):
         super().__init__(app, id)
 
         cluster = ecs.Cluster(self, id, vpc=vpc)
+        cluster.add_default_cloud_map_namespace(name=servicedomain, type=ecs.NamespaceType.PrivateDns)
+        self._cluster = cluster
 
         # ECSInstance role & profile
         pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/ecs-service.json')
@@ -21,7 +23,11 @@ class ContainerStack(cdk.Stack):
                  inline_policies={'ecs-service-autoscaling': pd})
 
         logs.LogGroup(self, 'ECSServiceLogGroup', retention_days=logs.RetentionDays.OneMonth)
-        sd.PrivateDnsNamespace(self, 'ECSServiceDiscoveryNamespace', vpc=vpc, name=servicedomain)
+        # self._sdnamespace = sd.PrivateDnsNamespace(self, 'ECSServiceDiscoveryNamespace', vpc=vpc, name=servicedomain)
+
+        ecssg = ec2.SecurityGroup(self, 'ECSServiceSecurityGroup', vpc=vpc)
+        ecssg.add_ingress_rule(peer=ec2.CidrIPv4(vpc.vpc_cidr_block), connection=ec2.TcpAllPorts())
+        self._clustersg = ecssg
 
         # Bastion host stuff -------------------------------------------------------------------------------------
         # BastionInstanceRole
@@ -33,7 +39,7 @@ class ContainerStack(cdk.Stack):
 
         # Bastion EC2 instance
         bsg = ec2.SecurityGroup(self, 'BastionSG', vpc=vpc)
-        bsg.add_ingress_rule(peer=ec2.AnyIPv4(), connection=ec2.TcpPortRange(0,65535))
+        bsg.add_ingress_rule(peer=ec2.AnyIPv4(), connection=ec2.TcpAllPorts())
 
         bhi = ec2.CfnInstance(self, 'BastionInstance', instance_type='t2.micro',
                               iam_instance_profile=bip.instance_profile_name,
@@ -61,3 +67,10 @@ class ContainerStack(cdk.Stack):
                                          protocol=elbv2.ApplicationProtocol.Http,
                                          default_target_groups=[dtg])
 
+    @property
+    def cluster(self):
+        return self._cluster
+
+    @property
+    def clustersg(self):
+        return self._clustersg
