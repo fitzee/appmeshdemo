@@ -13,6 +13,7 @@ installed, the commands below should all work.
  * `cdk docs`        open CDK documentation
 
 # Note
-The demo is a conversion of one that used multiple CloudFormation templates and bash scripts
+The demo is a conversion of one that used multiple CloudFormation templates and bash scripts.  This "port" if you could
+call it that evolved fairly organically.  I'll look at re-structuring everything in the not too distant future.
 
 Enjoy!
