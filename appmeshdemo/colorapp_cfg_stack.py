@@ -86,7 +86,7 @@ class ColorappCfgStack(cdk.Stack):
         targetgroups = [
             {'name': 'grafana', 'httpcode': '302', 'port': 3000},
             {'name': 'prometheus', 'httpcode': '405', 'port': 9090},
-            {'name': 'gateway', 'httpcode': '200', 'port': 9080}]
+            {'name': 'colorgateway', 'httpcode': '200', 'port': 9080}]
 
         for tgs in targetgroups:
             tgname = tgs['name']
