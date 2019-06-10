@@ -11,20 +11,6 @@ class ContainerStack(cdk.Stack):
         cluster.add_default_cloud_map_namespace(name=servicedomain, type=ecs.NamespaceType.PrivateDns)
         self._cluster = cluster
 
-        # ECSInstance role & profile
-        pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/ecs-service.json')
-        ecsinstancerole = iam.Role(self, 'ECSInstanceRole', assumed_by=iam.ServicePrincipal('ec2'),
-                                   inline_policies={'ecs-service': pd})
-        iam.CfnInstanceProfile(self, 'ECSInstanceProfile', roles=[ecsinstancerole.role_name])
-
-        # ECSServiceAutoScalingRole
-        pd = pu.PolicyUtils.createpolicyfromfile('./appmeshdemo/policydocs/ecs-service-autoscaling.json')
-        iam.Role(self, 'ECSServiceAutoScalingRole', assumed_by=iam.ServicePrincipal('application-autoscaling'),
-                 inline_policies={'ecs-service-autoscaling': pd})
-
-        logs.LogGroup(self, 'ECSServiceLogGroup', retention_days=logs.RetentionDays.OneMonth)
-        # self._sdnamespace = sd.PrivateDnsNamespace(self, 'ECSServiceDiscoveryNamespace', vpc=vpc, name=servicedomain)
-
         ecssg = ec2.SecurityGroup(self, 'ECSServiceSecurityGroup', vpc=vpc)
         ecssg.add_ingress_rule(peer=ec2.CidrIPv4(vpc.vpc_cidr_block), connection=ec2.TcpAllPorts())
         self._clustersg = ecssg
@@ -41,10 +27,16 @@ class ContainerStack(cdk.Stack):
         bsg = ec2.SecurityGroup(self, 'BastionSG', vpc=vpc)
         bsg.add_ingress_rule(peer=ec2.AnyIPv4(), connection=ec2.TcpAllPorts())
 
+        ni = ec2.CfnNetworkInterfaceProps()
+        ni['associatePublicIpAddress'] =True
+        ni['deviceIndex'] = '0'
+        ni['groupSet'] = [bsg.security_group_name]
+        ni['subnetId'] = vpc.public_subnets[0].subnet_id
+
         bhi = ec2.CfnInstance(self, 'BastionInstance', instance_type='t2.micro',
                               iam_instance_profile=bip.instance_profile_name,
                               image_id=ec2.AmazonLinuxImage().get_image(self).image_id,
-                              subnet_id=vpc.private_subnets[0].subnet_id)
+                              network_interfaces=[ni])
 
         # Load-Balancer stuff ------------------------------------------------------------------------------------
         plbsg = ec2.SecurityGroup(self, 'PublicLoadBalancerSG', vpc=vpc)
@@ -53,6 +45,7 @@ class ContainerStack(cdk.Stack):
         plb = elbv2.ApplicationLoadBalancer(self, 'PublicLoadBalancer', internet_facing=True,
                                             vpc_subnets=vpc.public_subnets,
                                             security_group=plbsg, vpc=vpc, idle_timeout_secs=30)
+        self._publoadbal = plb
 
         healthchk = elbv2.HealthCheck()
         healthchk['intervalSecs'] = 6
@@ -61,11 +54,13 @@ class ContainerStack(cdk.Stack):
 
         dtg = elbv2.ApplicationTargetGroup(self, 'DummyTargetGroupPublic', vpc=vpc, port=80,
                                            protocol=elbv2.ApplicationProtocol.Http,
-                                           health_check=healthchk)
+                                           health_check=healthchk, target_group_name='appmeshdemo-drop-1')
 
         plbl = elbv2.ApplicationListener(self, 'PublicLoadBalancerListener', load_balancer=plb, port=80,
                                          protocol=elbv2.ApplicationProtocol.Http,
                                          default_target_groups=[dtg])
+
+        cdk.CfnOutput(self, id='External URL', value='http://'+plb.load_balancer_dns_name)
 
     @property
     def cluster(self):
@@ -74,3 +69,7 @@ class ContainerStack(cdk.Stack):
     @property
     def clustersg(self):
         return self._clustersg
+
+    @property
+    def publoadbal(self):
+        return self._publoadbal

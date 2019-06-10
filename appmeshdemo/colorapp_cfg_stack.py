@@ -1,5 +1,5 @@
 from aws_cdk import (aws_ecs as ecs, aws_appmesh as appmesh, aws_iam as iam, aws_servicediscovery as sdisc,
-                     aws_ec2 as ec2, cdk)
+                     aws_ec2 as ec2, aws_elasticloadbalancingv2 as elbv2, cdk)
 from utils import PolicyUtils as pu
 from collections import namedtuple
 
@@ -8,7 +8,7 @@ class ColorappCfgStack(cdk.Stack):
     Props = namedtuple('Props', 'taskiamrole taskexeciamrole mesh environ repos colors cluster csg vpc')
 
     def __init__(self, app: cdk.App, id: str, cluster: ecs.Cluster, vpc: ec2.Vpc, mesh: appmesh.CfnMesh, repos: dict,
-                 clustersg: ec2.SecurityGroup, **kwargs) -> None:
+                 clustersg: ec2.SecurityGroup, publoadbal: elbv2.ApplicationLoadBalancer, **kwargs) -> None:
         super().__init__(app, id)
 
         env = pu.PolicyUtils.current_env(self)
@@ -26,9 +26,11 @@ class ColorappCfgStack(cdk.Stack):
                            cluster, clustersg, vpc)
         apps = ['colorteller', 'gateway', 'tcpecho']
 
+        tgroups = self.configure_load_balancers(props.vpc, publoadbal)
+
         virtnodes = {}
         for app in apps:
-            virtnodes.update(self.configure_container(app, props))
+            virtnodes.update(self.configure_container(app, props, tgroups))
 
         vroute = appmesh.CfnVirtualRouter(self, 'colortellerVirtualRouter',
                                           virtual_router_name='colorteller-vr', mesh_name=props.mesh.mesh_name,
@@ -53,25 +55,60 @@ class ColorappCfgStack(cdk.Stack):
                                      }
                                  }})
 
-        vservice = appmesh.CfnVirtualService(self, id='colortellerVirtualService', mesh_name=props.mesh.mesh_name,
-                                             virtual_service_name=repos['colorteller'].repository_name + '.' +
-                                                                  props.cluster.default_namespace.namespace_name,
-                                             spec={'provider': {
-                                                 'virtualRouter': {'virtualRouterName': 'colorteller-vr'}
-                                             }}).add_depends_on(vroute)
+        appmesh.CfnVirtualService(self, id='colortellerVirtualService', mesh_name=props.mesh.mesh_name,
+                                  virtual_service_name=repos['colorteller'].repository_name + '.' +
+                                                       props.cluster.default_namespace.namespace_name,
+                                  spec={'provider': {
+                                      'virtualRouter': {'virtualRouterName': 'colorteller-vr'}
+                                  }}).add_depends_on(vroute)
 
-        tservice = appmesh.CfnVirtualService(self, id='tcpechoVirtualService', mesh_name=props.mesh.mesh_name,
-                                             virtual_service_name='tcpecho.' +
-                                                                  props.cluster.default_namespace.namespace_name,
-                                             spec={'provider': {
-                                                 'virtualNode': {'virtualNodeName': 'tcpecho--vn'}
-                                             }}).add_depends_on(virtnodes['tcpecho'])
+        appmesh.CfnVirtualService(self, id='tcpechoVirtualService', mesh_name=props.mesh.mesh_name,
+                                  virtual_service_name='tcpecho.' +
+                                                       props.cluster.default_namespace.namespace_name,
+                                  spec={'provider': {
+                                      'virtualNode': {'virtualNodeName': 'tcpecho--vn'}
+                                  }}).add_depends_on(virtnodes['tcpecho'])
 
         route.add_depends_on(vroute)
         for virtnode in virtnodes:
             route.add_depends_on(virtnodes[virtnode])
 
-    def configure_container(self, appname: str, props: Props):
+    def configure_load_balancers(self, vpc: ec2.Vpc, publoadbal: elbv2.ApplicationLoadBalancer):
+        tgroups = {}
+        hc = elbv2.HealthCheck()
+        hc['intervalSecs'] = 10
+        hc['protocol'] = elbv2.ApplicationProtocol.Http
+        hc['healthyThresholdCount'] = 10
+        hc['timeoutSeconds'] = 5
+        hc['path'] = '/'
+
+        targetgroups = [
+            {'name': 'grafana', 'httpcode': '302', 'port': 3000},
+            {'name': 'prometheus', 'httpcode': '405', 'port': 9090}]
+
+        for tgs in targetgroups:
+            tgname = tgs['name']
+            code = tgs['httpcode']
+            port = tgs['port']
+            hc['healthyHttpCodes'] = code
+
+            atg = elbv2.ApplicationTargetGroup(self, id=tgname + 'TargetGroup', protocol=elbv2.ApplicationProtocol.Http,
+                                               port=port, deregistration_delay_sec=30, vpc=vpc,
+                                               target_group_name='appmeshdemo-' + tgname + '-1', health_check=hc,
+                                               target_type=elbv2.TargetType.Ip)
+
+            lbl = elbv2.ApplicationListener(self, tgname + 'LoadBalancerListener', port=port,
+                                            protocol=elbv2.ApplicationProtocol.Http, default_target_groups=[atg],
+                                            load_balancer=publoadbal)
+
+            elbv2.ApplicationListenerRule(self, tgname + 'LoadBalancerRule', listener=lbl,
+                                          target_groups=[atg], priority=1, path_pattern='*')
+
+            tgroups[tgname] = atg
+
+        return tgroups
+
+    def configure_container(self, appname: str, props: Props, tgroups: {}):
         virtnodes = {}
         if appname == 'gateway' or appname == 'tcpecho':
             colors = ['']
@@ -198,6 +235,10 @@ class ColorappCfgStack(cdk.Stack):
                                      desired_count=1, task_definition=td, cluster=props.cluster,
                                      vpc_subnets=props.vpc.private_subnets, security_group=props.csg,
                                      service_discovery_options=disco)
+
+            if appname == 'gateway':
+                svc._load_balancers = [{'containerName': 'grafana', 'containerPort': 3000,
+                                        'targetGroupArn': tgroups['grafana'].target_group_arn}]
 
             path = '/ping' if appname != 'tcpecho' else '/'
             spec = {
