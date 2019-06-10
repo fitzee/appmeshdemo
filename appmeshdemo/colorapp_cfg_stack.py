@@ -240,9 +240,7 @@ class ColorappCfgStack(cdk.Stack):
 
             if appname == 'gateway':
                 svc._load_balancers = [{'containerName': 'grafana', 'containerPort': 3000,
-                                        'targetGroupArn': tgroups['grafana'].target_group_arn},
-                                       {'containerName': 'gateway-container', 'containerPort': 9080,
-                                        'targetGroupArn': tgroups['gateway'].target_group_arn}]
+                                        'targetGroupArn': tgroups['grafana'].target_group_arn}]
 
             path = '/ping' if appname != 'tcpecho' else '/'
             spec = {
