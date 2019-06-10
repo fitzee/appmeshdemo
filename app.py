@@ -17,5 +17,5 @@ cs.add_dependency(ns)
 mesh = AppMeshStack(app, 'appmeshdemo-appmesh', 'default')
 ecrs = ColorappECRStack(app, 'appmeshdemo-colorapp-ecr', apps=apps)
 setup = ColorappCfgStack(app, 'appmeshdemo-colorapp-cfg', cluster=cs.cluster, vpc=ns.vpc, mesh=mesh.mesh,
-                         repos=ecrs.repos, clustersg=cs.clustersg, publoadbal=cs.publoadbal, apps=apps)
+                         repos=ecrs.repos, clustersg=cs.clustersg, publoadbal=cs.publoadbal)
 app.run()
