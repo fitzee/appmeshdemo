@@ -43,7 +43,7 @@ class ContainerStack(cdk.Stack):
         plbsg.add_ingress_rule(peer=ec2.AnyIPv4(), connection=ec2.TcpPortRange(0,65535))
 
         plb = elbv2.ApplicationLoadBalancer(self, 'PublicLoadBalancer', internet_facing=True,
-                                            vpc_subnets=vpc.public_subnets, load_balancer_name='appmeshdemo',
+                                            load_balancer_name='appmeshdemo',
                                             security_group=plbsg, vpc=vpc, idle_timeout_secs=30)
         self._publoadbal = plb
 
