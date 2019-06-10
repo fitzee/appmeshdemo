@@ -79,12 +79,14 @@ class ColorappCfgStack(cdk.Stack):
         hc['intervalSecs'] = 10
         hc['protocol'] = elbv2.ApplicationProtocol.Http
         hc['healthyThresholdCount'] = 10
+        hc['unhealthyThresholdCount'] = 10
         hc['timeoutSeconds'] = 5
         hc['path'] = '/'
 
         targetgroups = [
             {'name': 'grafana', 'httpcode': '302', 'port': 3000},
-            {'name': 'prometheus', 'httpcode': '405', 'port': 9090}]
+            {'name': 'prometheus', 'httpcode': '405', 'port': 9090},
+            {'name': 'gateway', 'httpcode': '200', 'port': 9090}]
 
         for tgs in targetgroups:
             tgname = tgs['name']
@@ -238,7 +240,9 @@ class ColorappCfgStack(cdk.Stack):
 
             if appname == 'gateway':
                 svc._load_balancers = [{'containerName': 'grafana', 'containerPort': 3000,
-                                        'targetGroupArn': tgroups['grafana'].target_group_arn}]
+                                        'targetGroupArn': tgroups['grafana'].target_group_arn},
+                                       {'containerName': 'gateway-container', 'containerPort': 9080,
+                                        'targetGroupArn': tgroups['gateway'].target_group_arn}]
 
             path = '/ping' if appname != 'tcpecho' else '/'
             spec = {
