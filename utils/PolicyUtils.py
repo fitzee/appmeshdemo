@@ -27,7 +27,9 @@ class PolicyUtils:
     @staticmethod
     def current_env(construct: cdk.Construct) -> cdk.Environment:
         env = cdk.Environment()
+        # env['account'] = construct.node.get_context('aws:cdk:toolkit:default-account')
         env['account'] = construct.node.get_context('aws:cdk:toolkit:default-account')
+        # env['region'] = construct.node.get_context('aws:cdk:toolkit:default-region')
         env['region'] = construct.node.get_context('aws:cdk:toolkit:default-region')
         return env
 

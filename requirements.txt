@@ -1,14 +1,14 @@
-aws-cdk.aws_ec2
-aws-cdk.aws_ecs
-aws-cdk.aws_ecr
-aws-cdk.aws_iam
-aws-cdk.aws_codebuild
-aws-cdk.aws_codepipeline
-aws-cdk.aws_logs
-aws-cdk.aws_servicediscovery
-aws-cdk.aws_elasticloadbalancing
-aws-cdk.aws_appmesh
-aws-cdk.cdk
+aws-cdk.aws_ec2==0.33.0
+aws-cdk.aws_ecs==0.33.0
+aws-cdk.aws_ecr==0.33.0
+aws-cdk.aws_iam==0.33.0
+aws-cdk.aws_codebuild==0.33.0
+aws-cdk.aws_codepipeline==0.33.0
+aws-cdk.aws_logs==0.33.0
+aws-cdk.aws_servicediscovery==0.33.0
+aws-cdk.aws_elasticloadbalancing==0.33.0
+aws-cdk.aws_appmesh==0.33.0
+aws-cdk.cdk==0.33.0
 ipaddress
 requests
 

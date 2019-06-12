@@ -108,6 +108,7 @@ class ColorappCfgStack(cdk.Stack):
 
             tgroups[tgname] = atg
 
+
         return tgroups
 
     def configure_container(self, appname: str, props: Props, tgroups: {}):
@@ -165,7 +166,7 @@ class ColorappCfgStack(cdk.Stack):
             cont = ecs.ContainerDefinition(self, fullname+'-container', task_definition=td, essential=True,
                                            logging=ecs.AwsLogDriver(self, fullname+'-logs', stream_prefix=fullname),
                                            image=contimage, environment=env)
-            cont.add_port_mappings(container_port=port, host_port=port, protocol=ecs.Protocol.Tcp)
+            #cont.add_port_mappings(container_port=port, host_port=port, protocol=ecs.Protocol.Tcp)
 
             # X-Ray and Envoy definition ----------------------------------------------------------------------------
             if appname != 'tcpecho':
